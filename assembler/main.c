@@ -87,7 +87,8 @@ reg(char *code)
             r1 = R3;
             break;
         default:
-            return -1;
+            printf("invalid instruction: %s\n", code);
+            exit(-1);
     }
 
     return r1 << 8;
@@ -102,7 +103,10 @@ imm(char *code)
 
     p = code + 4;
     while(*p != '\n') {
-        if(i > 10) return -1;
+        if(i > 10) {
+            printf("invalid instruction: %s\n", code);
+            exit(-1);
+        }
         buf[i] = *p;
         ++i, ++p;
     }
@@ -132,12 +136,16 @@ regimm(char *code)
             r1 = R3;
             break;
         default:
-            return -1;
+            printf("invalid instruction: %s\n", code);
+            exit(-1);
     }
     
     p = code + 8;
     while(*p != '\n') {
-        if(i > 10) return -1;
+        if(i > 10) {
+            printf("invalid instruction: %s\n", code);
+            exit(-1);
+        }
         buf[i] = *p;
         ++i, ++p;
     }
@@ -164,7 +172,8 @@ regreg(char *code)
             r1 = R3;
             break;
         default:
-            return -1;
+            printf("invalid instruction: %s\n", code);
+            exit(-1);
     }
 
     switch(code[9]) {
@@ -181,7 +190,8 @@ regreg(char *code)
             r2 = R3;
             break;
         default:
-            return -1;
+            printf("invalid instruction: %s\n", code);
+            exit(-1);
     }
 
     return r1 << 8 | r2 << 5;
@@ -192,72 +202,91 @@ main(void)
 {
     char buf[256], inst[4];
     int count = 0;
-    FILE *fp;
+    FILE *in, *out;
 
     printf("FIle name: ");
     scanf("%s", buf);
 
-    if((fp = fopen(buf, "r")) == NULL) {
+    if((in = fopen(buf, "r")) == NULL) {
         puts("file open error!");
         return -1;
     }
 
-    while(fgets(buf, 256, fp) != NULL) {
+    if((out = fopen("rom_init.mif", "w")) == NULL) {
+        puts("file open error!");
+        return -1;
+    }
+
+    fprintf(out, "WIDTH=15;\n");
+    fprintf(out, "DEPTH=256;\n");
+    fprintf(out, "ADDRESS_RADIX=HEX;\n");
+    fprintf(out, "DATA_RADIX=HEX;\n");
+    fprintf(out, "CONTENT BEGIN\n");
+
+    while(fgets(buf, 256, in) != NULL) {
         strncpy(inst, buf, 3);
-        printf("%d %d: %s", op_code(inst), count, buf);
-        count++;
 
         switch(op_code(inst)) {
             case MOV:
-                printf("%4x\n", MOV << 11 | regreg(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, MOV << 11 | regreg(buf));
                 break;
             case ADD:
-                printf("%04x\n", ADD << 11 | regreg(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, ADD << 11 | regreg(buf));
                 break;
             case SUB:
-                printf("%04x\n", SUB << 11 | regreg(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, SUB << 11 | regreg(buf));
                 break;
             case AND:
-                printf("%04x\n", AND << 11 | regreg(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, AND << 11 | regreg(buf));
                 break;
             case OR:
-                printf("%04x\n", OR << 11 | regreg(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, OR << 11 | regreg(buf));
                 break;
             case SL:
-                printf("%04x\n", SL << 11 | reg(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, SL << 11 | reg(buf));
                 break;
             case SR:
-                printf("%04x\n", SR << 11 | reg(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, SR << 11 | reg(buf));
                 break;
             case SRA:
-                printf("%04x\n", SRA << 11 | reg(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, SRA << 11 | reg(buf));
                 break;
             case LDL:
-                printf("%04x\n", LDL << 11 | regimm(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, LDL << 11 | regimm(buf));
                 break;
             case LDH:
-                printf("%04x\n", LDH << 11 | regimm(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, LDH << 11 | regimm(buf));
                 break;
             case CMP:
-                printf("%04x\n", CMP << 11 | regreg(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, CMP << 11 | regreg(buf));
                 break;
             case JE:
-                printf("%04x\n", JE << 11 | imm(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, JE << 11 | imm(buf));
                 break;
             case JMP:
-                printf("%04x\n", JMP << 11 | imm(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, JMP << 11 | imm(buf));
                 break;
             case LD:
-                printf("%04x\n", LD << 11 | regimm(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, LD << 11 | regimm(buf));
                 break;
             case ST:
-                printf("%04x\n", ST << 11 | regimm(buf));
+                fprintf(out, "\t%03X   :   %04X;\n", count, ST << 11 | regimm(buf));
                 break;
             case HLT:
-                printf("%04x\n", HLT << 11);
+                fprintf(out, "\t%03X   :   %04X;\n", count, HLT << 11);
                 break;
+            default:
+                printf("invalid instruction: %d\n", count);
+                return -1;
         }
+        count++;
     }
+
+    fprintf(out, "\t[%03X..0FF]   :   0000;\n", count);
+    fprintf(out, "END;\n");
+
+    fclose(in);
+    fclose(out);
 
     return 0;
 }

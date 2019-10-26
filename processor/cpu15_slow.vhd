@@ -19,7 +19,7 @@ component clk_down
 	);
 end component;
 
-component cpu15_mega_ram
+component cpu15_pipeline
 	port (
 		CLK : in std_logic;
 		RESET_N : in std_logic;
@@ -37,7 +37,7 @@ begin
 			CLK_OUT => CLK_SLOW
 		);
 		
-	C2 : cpu15_mega_ram
+	C2 : cpu15_pipeline
 		port map(
 			CLK => CLK_SLOW,
 			RESET_N => RESET_N,

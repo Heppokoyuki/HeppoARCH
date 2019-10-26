@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 typedef enum {
-    MOV,
+    NOP,
     ADD,
     SUB,
     AND,
@@ -20,7 +20,7 @@ typedef enum {
     JMP,
     LD,
     ST,
-    HLT
+    MOV
 } inst_t;
 
 typedef enum {
@@ -33,8 +33,8 @@ typedef enum {
 int
 op_code(char *mnemonic)
 {
-    if(!strncmp(mnemonic, "MOV", 3))
-        return MOV;
+    if(!strncmp(mnemonic, "NOP", 3))
+        return NOP;
     if(!strncmp(mnemonic, "ADD", 3))
         return ADD;
     if(!strncmp(mnemonic, "SUB", 3))
@@ -63,8 +63,8 @@ op_code(char *mnemonic)
         return LD;
     if(!strncmp(mnemonic, "ST ", 3))
         return ST;
-    if(!strncmp(mnemonic, "HLT", 3))
-        return HLT;
+    if(!strncmp(mnemonic, "MOV", 3))
+        return MOV;
     return -1;
 }
 
@@ -227,8 +227,8 @@ main(void)
         strncpy(inst, buf, 3);
 
         switch(op_code(inst)) {
-            case MOV:
-                fprintf(out, "\t%03X   :   %04X;\n", count, MOV << 11 | regreg(buf));
+            case NOP:
+                fprintf(out, "\t%03X   :   %04X;\n", count, NOP << 11);
                 break;
             case ADD:
                 fprintf(out, "\t%03X   :   %04X;\n", count, ADD << 11 | regreg(buf));
@@ -272,11 +272,11 @@ main(void)
             case ST:
                 fprintf(out, "\t%03X   :   %04X;\n", count, ST << 11 | regimm(buf));
                 break;
-            case HLT:
-                fprintf(out, "\t%03X   :   %04X;\n", count, HLT << 11);
+            case MOV:
+                fprintf(out, "\t%03X   :   %04X;\n", count, MOV << 11 | regreg(buf));
                 break;
             default:
-                printf("invalid instruction: %d\n", count);
+                printf("invalid instruction: %s\n", buf);
                 return -1;
         }
         count++;
